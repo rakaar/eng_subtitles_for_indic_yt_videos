@@ -1,0 +1,8 @@
+.env
+venv/*
+audio_chunks/*
+audio_files/*
+extracted_audio/*
+*.srt
+__pycache__/*
+*.pyc
