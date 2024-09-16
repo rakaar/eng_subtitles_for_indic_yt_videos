@@ -54,11 +54,11 @@ language_num = int(input("Enter the language number: "))
 if language_num not in num_to_language_mapping.keys():
     language_num = 0
 
-
+sys_prompt = 'If unable to translate, then return [Unable to translate]'
 if language_num == 0:
-    prompt = None
+    prompt = sys_prompt
 else:
-    prompt = f"This is a {num_to_language_mapping[language_num]} language audio clip from a Youtube Video"
+    prompt = f"This is a {num_to_language_mapping[language_num]} language audio clip from a Youtube Video. {sys_prompt}"
 
 
 print('The prompt to assist is:')
@@ -100,7 +100,7 @@ except Exception as e:
 # create subtitle file named subtitles.srt'
 video_name = downloaded_audio.split('/')[-1].rstrip('.mp3')
 subtitle_filename = f'{video_name}.srt'
-print(f'Creating subtitle file named')
+print(f'Creating subtitle file named {subtitle_filename}')
 
 if transcripts:
     try:

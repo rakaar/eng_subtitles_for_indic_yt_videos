@@ -52,7 +52,7 @@ def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
 
 def split_audio_on_silence(input_audio_path, output_dir='audio_chunks', 
                            min_silence_len=1000, silence_thresh=-40, 
-                           keep_silence=500, max_chunk_duration=7000):
+                           keep_silence=500, max_chunk_duration=5000):
     """
     Splits audio into chunks based on silence and maximum duration.
     
