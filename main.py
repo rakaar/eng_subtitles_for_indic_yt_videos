@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from utils import download_youtube_audio,split_audio_on_silence, process_chunks_and_collect_transcripts, create_srt_file
+from utils import download_youtube_audio, split_audio_with_sliding_window, process_chunks_and_collect_transcripts, create_srt_file
 
 load_dotenv()
 
@@ -54,11 +54,10 @@ language_num = int(input("Enter the language number: "))
 if language_num not in num_to_language_mapping.keys():
     language_num = 0
 
-sys_prompt = 'If unable to translate, then return [Unable to translate]'
 if language_num == 0:
-    prompt = sys_prompt
+    prompt = None
 else:
-    prompt = f"This is a {num_to_language_mapping[language_num]} language audio clip from a Youtube Video. {sys_prompt}"
+    prompt = f"{num_to_language_mapping[language_num]} language audio"
 
 
 print('The prompt to assist is:')
@@ -77,12 +76,8 @@ else:
 print('Splitting audio into chunks...')
 if downloaded_audio:
     try:
-        chunks = split_audio_on_silence(
-            downloaded_audio,
-            output_dir='audio_chunks',
-            min_silence_len=1000,
-            silence_thresh=-40,
-            keep_silence=500
+        chunks = split_audio_with_sliding_window(
+            downloaded_audio
         )
     except Exception as e:
         raise Exception(f"Failed to split audio into chunks: {e}")

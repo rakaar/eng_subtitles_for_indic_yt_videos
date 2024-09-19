@@ -1,8 +1,9 @@
 import yt_dlp
 import os
-from pydub import AudioSegment, silence
+from pydub import AudioSegment
 import requests
 import mimetypes
+import math
 
 def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
     """
@@ -48,77 +49,67 @@ def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
             print(f"Error downloading audio: {e}")
             return None
         
+# utils.py
 
 
-def split_audio_on_silence(input_audio_path, output_dir='audio_chunks', 
-                           min_silence_len=1000, silence_thresh=-40, 
-                           keep_silence=500, max_chunk_duration=5000):
+
+
+def split_audio_with_sliding_window(input_audio_path, output_dir='audio_chunks', 
+                                   chunk_duration_ms=5000, context_duration_ms=1000):
     """
-    Splits audio into chunks based on silence and maximum duration.
+    Splits audio into fixed-length subtitle chunks with overlapping context.
+    
+    Each chunk corresponds to a 7-second subtitle window and includes 2 seconds
+    of audio before and after the subtitle window to provide context for translation.
     
     Parameters:
     - input_audio_path (str): Path to the input audio file.
     - output_dir (str): Directory to save the audio chunks.
-    - min_silence_len (int): Minimum length of silence in ms.
-    - silence_thresh (int): Silence threshold in dBFS.
-    - keep_silence (int): Amount of silence to keep at the beginning and end of each chunk in ms.
-    - max_chunk_duration (int): Maximum duration of each chunk in ms (e.g., 7000 ms for 7 seconds).
+    - chunk_duration_ms (int): Duration of each subtitle in milliseconds (e.g., 7000 ms for 7 seconds).
+    - context_duration_ms (int): Duration of context to include before and after each chunk in ms (e.g., 2000 ms).
     
     Returns:
-    - List of tuples: Each tuple contains (chunk_path, start_time, end_time)
+    - List of tuples: Each tuple contains (chunk_path, subtitle_start_time, subtitle_end_time)
     """
+    # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    audio = AudioSegment.from_file(input_audio_path)
     
-    print("Splitting audio into chunks based on silence...")
-    initial_chunks = silence.split_on_silence(
-        audio,
-        min_silence_len=min_silence_len,
-        silence_thresh=silence_thresh,
-        keep_silence=keep_silence
-    )
+    # Load the audio file
+    audio = AudioSegment.from_file(input_audio_path)
+    total_duration = len(audio)  # in milliseconds
+    
+    # Calculate the number of chunks
+    num_chunks = math.ceil(total_duration / chunk_duration_ms)
     
     final_chunks = []
-    current_time = 0  # in milliseconds
     
-    for i, chunk in enumerate(initial_chunks):
-        chunk_duration = len(chunk)
-        start_time = current_time
-        end_time = current_time + chunk_duration
+    for i in range(num_chunks):
+        # Define subtitle timing
+        subtitle_start = i * chunk_duration_ms
+        subtitle_end = min((i + 1) * chunk_duration_ms, total_duration)
         
-        # If chunk is longer than max_chunk_duration, split it further
-        if chunk_duration > max_chunk_duration:
-            num_subchunks = chunk_duration // max_chunk_duration + 1
-            subchunk_duration = chunk_duration / num_subchunks
-            for j in range(num_subchunks):
-                sub_start = j * subchunk_duration
-                sub_end = (j + 1) * subchunk_duration
-                subchunk = chunk[int(sub_start):int(sub_end)]
-                
-                subchunk_filename = f"chunk_{i+1}_{j+1}.mp3"
-                subchunk_path = os.path.join(output_dir, subchunk_filename)
-                subchunk.export(subchunk_path, format="mp3")
-                
-                sub_start_time = start_time + int(sub_start)
-                sub_end_time = start_time + int(sub_end)
-                
-                final_chunks.append((subchunk_path, sub_start_time, sub_end_time))
-                print(f"Created {subchunk_filename}: {sub_start_time/1000:.2f}s to {sub_end_time/1000:.2f}s")
-                
-            current_time += chunk_duration + keep_silence
-        else:
-            # Export the chunk as is
-            chunk_filename = f"chunk_{i+1}.mp3"
-            chunk_path = os.path.join(output_dir, chunk_filename)
-            chunk.export(chunk_path, format="mp3")
-            
-            final_chunks.append((chunk_path, start_time, end_time))
-            print(f"Created {chunk_filename}: {start_time/1000:.2f}s to {end_time/1000:.2f}s")
-            
-            # Update the current time
-            current_time = end_time + keep_silence  # Adding kept silence to avoid overlap
+        # Define audio chunk timing with context
+        chunk_start = max(subtitle_start - context_duration_ms, 0)
+        chunk_end = min(subtitle_end + context_duration_ms, total_duration)
+        
+        # Extract the audio chunk
+        chunk = audio[chunk_start:chunk_end]
+        
+        # Define chunk filename
+        chunk_filename = f"chunk_{i+1}.mp3"
+        chunk_path = os.path.join(output_dir, chunk_filename)
+        
+        # Export the audio chunk
+        chunk.export(chunk_path, format="mp3")
+        
+        # Append to final chunks list
+        final_chunks.append((chunk_path, subtitle_start, subtitle_end))
+        
+        # Log the creation
+        print(f"Created {chunk_filename}: {format_timestamp(subtitle_start)} to {format_timestamp(subtitle_end)}")
     
     return final_chunks
+
 
 def send_to_sarvam_api(audio_file_path, api_key, prompt=None, model='saaras:v1'):
     """
