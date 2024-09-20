@@ -55,7 +55,7 @@ def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
 
 
 def split_audio_with_sliding_window(input_audio_path, output_dir='audio_chunks', 
-                                   chunk_duration_ms=5000, context_duration_ms=1000):
+                                   chunk_duration_ms=5000, context_duration_ms=500):
     """
     Splits audio into fixed-length subtitle chunks with overlapping context.
     

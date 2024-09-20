@@ -57,7 +57,7 @@ if language_num not in num_to_language_mapping.keys():
 if language_num == 0:
     prompt = None
 else:
-    prompt = f"{num_to_language_mapping[language_num]} language audio"
+    prompt = f"{num_to_language_mapping[language_num]} language audio. In this audio. In this audio, where ever you hear Poti, it refers to the name of a person, NOT competition. So keep that in mind while transcribing."
 
 
 print('The prompt to assist is:')
