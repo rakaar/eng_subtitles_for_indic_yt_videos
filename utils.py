@@ -4,6 +4,47 @@ from pydub import AudioSegment
 import requests
 import mimetypes
 import math
+from pytube import YouTube
+import logging
+
+def download_youtube_video(youtube_link, output_path='video_files', video_format='mp4'):
+    """
+    Downloads the entire YouTube video using yt_dlp.
+    
+    Parameters:
+    - youtube_link (str): URL of the YouTube video.
+    - output_path (str): Directory to save the downloaded video.
+    - video_format (str): Desired video format (e.g., 'mp4').
+    
+    Returns:
+    - str: Path to the downloaded video file, or None if download failed.
+    """
+    ydl_opts = {
+        'format': f'bestvideo[ext={video_format}]+bestaudio[ext=m4a]/best[ext={video_format}]',
+        'outtmpl': os.path.join(output_path, '%(title)s.%(ext)s'),
+        'merge_output_format': video_format,
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(youtube_link, download=True)
+            video_title = info_dict.get('title', None)
+            video_ext = info_dict.get('ext', None)
+            video_filename = f"{video_title}.{video_ext}"
+            video_path = os.path.join(output_path, video_filename)
+            if os.path.exists(video_path):
+                logging.info(f"Downloaded video: {video_path}")
+                return video_path
+            else:
+                logging.error("Video download failed.")
+                return None
+    except Exception as e:
+        logging.error(f"Failed to download video: {e}")
+        return None
+
+
 
 def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
     """

@@ -10,6 +10,8 @@ SARVAM_KEY = os.getenv('SARVAM_KEY')
 print('Emptying audio_chunks folder...')
 try:
     os.system('rm -rf audio_chunks/*')
+    os.system('rm -rf audio_files/*')
+
 except Exception as e:
     raise Exception('Error emptying audio_chunks folder. Delete all files in folder manually and try again.') from e
 
@@ -57,7 +59,7 @@ if language_num not in num_to_language_mapping.keys():
 if language_num == 0:
     prompt = None
 else:
-    prompt = f"{num_to_language_mapping[language_num]} language audio. In this audio. In this audio, where ever you hear Poti, it refers to the name of a person, NOT competition. So keep that in mind while transcribing."
+    prompt = f"{num_to_language_mapping[language_num]} language audio"
 
 
 print('The prompt to assist is:')
