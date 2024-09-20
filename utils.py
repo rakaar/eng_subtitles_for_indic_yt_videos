@@ -4,8 +4,9 @@ from pydub import AudioSegment
 import requests
 import mimetypes
 import math
-from pytube import YouTube
 import logging
+from tqdm import trange, tqdm
+import shutil
 
 def download_youtube_video(youtube_link, output_path='video_files', video_format='mp4'):
     """
@@ -25,28 +26,22 @@ def download_youtube_video(youtube_link, output_path='video_files', video_format
         'merge_output_format': video_format,
         'quiet': True,
         'no_warnings': True,
+        'restrictfilenames': True
     }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(youtube_link, download=True)
-            video_title = info_dict.get('title', None)
-            video_ext = info_dict.get('ext', None)
-            video_filename = f"{video_title}.{video_ext}"
-            video_path = os.path.join(output_path, video_filename)
-            if os.path.exists(video_path):
-                logging.info(f"Downloaded video: {video_path}")
-                return video_path
-            else:
-                logging.error("Video download failed.")
-                return None
+            video_path = ydl.prepare_filename(info_dict)
+            logging.info(f"Downloaded video: {video_path}")
+            return video_path
     except Exception as e:
         logging.error(f"Failed to download video: {e}")
         return None
 
 
 
-def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
+def download_youtube_audio(url, output_path='audio_files', audio_format='mp3'):
     """
     Downloads audio from a YouTube video.
 
@@ -83,6 +78,7 @@ def download_youtube_audio(url, output_path='downloads', audio_format='mp3'):
             filename = ydl.prepare_filename(info_dict)
             base, _ = os.path.splitext(filename)
             audio_file = f"{base}.{audio_format}"
+            
             
             print(f"Audio downloaded successfully: {audio_file}")
             return audio_file
@@ -124,7 +120,7 @@ def split_audio_with_sliding_window(input_audio_path, output_dir='audio_chunks',
     
     final_chunks = []
     
-    for i in range(num_chunks):
+    for i in trange(num_chunks):
         # Define subtitle timing
         subtitle_start = i * chunk_duration_ms
         subtitle_end = min((i + 1) * chunk_duration_ms, total_duration)
@@ -147,7 +143,7 @@ def split_audio_with_sliding_window(input_audio_path, output_dir='audio_chunks',
         final_chunks.append((chunk_path, subtitle_start, subtitle_end))
         
         # Log the creation
-        print(f"Created {chunk_filename}: {format_timestamp(subtitle_start)} to {format_timestamp(subtitle_end)}")
+        # print(f"Created {chunk_filename}: {format_timestamp(subtitle_start)} to {format_timestamp(subtitle_end)}")
     
     return final_chunks
 
@@ -214,8 +210,8 @@ def process_chunks_and_collect_transcripts(chunks, api_key, prompt):
     - List of dictionaries: Each dict contains 'start_time', 'end_time', and 'transcript'.
     """
     transcripts = []
-    for chunk_path, start_ms, end_ms in chunks:
-        print(f'Processing chunk: {chunk_path} from {start_ms/1000:.2f}s to {end_ms/1000:.2f}s')
+    for chunk_path, start_ms, end_ms in tqdm(chunks):
+        # print(f'Processing chunk: {chunk_path} from {start_ms/1000:.2f}s to {end_ms/1000:.2f}s')
         response = send_to_sarvam_api(chunk_path, api_key, prompt=prompt)
         if response and 'transcript' in response:
             transcript = response['transcript']
@@ -289,3 +285,40 @@ def create_srt_file(transcripts, output_file='subtitles.srt', max_chars=42):
             subtitle_number += 1
     print(f"SRT file created at {output_file}")
 
+
+def get_language_prompt(language):
+    """
+    Generates a prompt based on the selected language.
+    
+    Parameters:
+    - language (str): Selected language.
+    
+    Returns:
+    - str or None: Prompt string or None if language is 'Unknown'.
+    """
+    if language.lower() == 'unknown':
+        return None
+    else:
+        return f"{language} language audio"
+
+def clear_folder(folder_path):
+    """
+    Clears all files and subdirectories in the specified folder.
+    
+    Parameters:
+    - folder_path (str): Path to the folder to clear.
+    
+    Returns:
+    - None
+    """
+    if os.path.exists(folder_path):
+        try:
+            shutil.rmtree(folder_path)
+            os.makedirs(folder_path, exist_ok=True)
+            logging.info(f"Cleared folder: {folder_path}")
+        except Exception as e:
+            logging.error(f"Failed to clear folder {folder_path}. Reason: {e}")
+            st.error(f"Failed to clear folder {folder_path}. Please check permissions.")
+    else:
+        os.makedirs(folder_path, exist_ok=True)
+        logging.info(f"Created folder: {folder_path}")

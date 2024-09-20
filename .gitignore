@@ -3,6 +3,10 @@ venv/*
 audio_chunks/*
 audio_files/*
 extracted_audio/*
+video_files/*
+*mp4
+*.mp3
+*.srt
 *.srt
 __pycache__/*
 *.pyc
