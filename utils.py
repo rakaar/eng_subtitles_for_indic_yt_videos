@@ -7,6 +7,7 @@ import math
 import logging
 from tqdm import trange, tqdm
 import shutil
+import streamlit as st
 
 def download_youtube_video(youtube_link, output_path='video_files', video_format='mp4'):
     """
@@ -32,9 +33,10 @@ def download_youtube_video(youtube_link, output_path='video_files', video_format
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(youtube_link, download=True)
+            duration = info_dict.get('duration', 0)  
             video_path = ydl.prepare_filename(info_dict)
             logging.info(f"Downloaded video: {video_path}")
-            return video_path
+            return video_path, duration
     except Exception as e:
         logging.error(f"Failed to download video: {e}")
         return None

@@ -70,16 +70,26 @@ def main():
             clear_folder('audio_chunks')
             clear_folder('audio_files')
             clear_folder('video_files')  # Ensure video_files folder is cleared as well
+            # delete .srt files also
+            for file in os.listdir():
+                if file.endswith(".srt"):
+                    os.remove(file)
         
         # Step 2: Download the entire YouTube video using yt_dlp
         with st.spinner('Downloading video from YouTube...'):
             try:
-                downloaded_video = download_youtube_video(youtube_link)
+                downloaded_video, duration = download_youtube_video(youtube_link)
+
                 if downloaded_video:
+                    if duration > 1200:
+                        st.error("Video length exceeds 20 minutes. Raghavendra doesn't have enough credits \
+                                 But if u are excited to try. Mail to `raghavendra.kaushik.iitkgp@gmail.com`. He will recharge.")
+                        st.stop()
                     st.success(f"Downloaded video file: `{downloaded_video}`")
                 else:
                     st.error("Failed to download video file.")
                     st.stop()
+
             except Exception as e:
                 st.error(f"Error downloading video: {e}")
                 st.stop()
