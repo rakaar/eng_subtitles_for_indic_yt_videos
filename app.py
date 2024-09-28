@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import logging
-from dotenv import load_dotenv
 from utils import (
     download_youtube_audio,  # Assuming this is still used for audio extraction
     split_audio_with_sliding_window,
@@ -13,8 +12,8 @@ from utils import (
 )
 
 # Load environment variables
-load_dotenv()
-SARVAM_KEY = os.getenv('SARVAM_KEY')
+SARVAM_KEY = st.secrets["SARVAM_KEY"]
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

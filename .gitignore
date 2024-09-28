@@ -10,3 +10,4 @@ video_files/*
 *.srt
 __pycache__/*
 *.pyc
+secrets.toml
